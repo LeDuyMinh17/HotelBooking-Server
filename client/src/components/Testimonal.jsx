@@ -11,7 +11,7 @@ const Testimonal = () => {
         <div className="flex flex-wrap items-center justify-center gap-6 pt-30">
                 <div className="text-sm w-80 border border-gray-200 pb-6 rounded-lg bg-white shadow-[0px_4px_15px_0px] shadow-black/5">
                     <div className="flex flex-col items-center px-5 py-4 relative">
-                        <img className="h-24 w-24 absolute -top-14 rounded-full" src="https://cdnphoto.dantri.com.vn/l3AEyNcWes4Ymcr5KMTmIOqTQPU=/thumb_w/960/2020/01/15/an-2-1579060145661.jpg" alt="userImage1" />
+                        <img className="h-24 w-24 absolute -top-14 rounded-full" src="https://res.cloudinary.com/deevnyeis/image/upload/v1760383337/Tran_Kieu_An_chdfto.jpg" alt="userImage1" />
                         <div className="pt-8 text-center">
                             <h1 className="text-lg font-medium text-gray-800">Trần Kiều Ân</h1>
                             <p className="text-gray-800/80">Diễn viên</p>

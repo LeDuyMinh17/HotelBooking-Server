@@ -91,9 +91,25 @@ const Navbar = () => {
   }, [isLoggedIn]); // 👈 Theo dõi trạng thái đăng nhập
 
   useEffect(() => {
-    const socket = io(BASE_URL);
+    if (!BASE_URL) return;
 
-    // Lắng nghe realtime đặt phòng
+    // 🔹 Dùng wss:// cho môi trường HTTPS
+    const socket = io(BASE_URL, {
+      transports: ["websocket"], // ép dùng websocket, không polling
+      reconnectionAttempts: 5, // thử kết nối lại tối đa 5 lần
+      reconnectionDelay: 1000, // delay 1s giữa các lần
+    });
+
+    socket.on("connect", () => {
+      console.log("🟢 WebSocket connected:", socket.id);
+      if (role) socket.emit("registerRole", role); // đăng ký role ngay khi có
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 WebSocket disconnected");
+    });
+
+    // 📡 Lắng nghe realtime đặt phòng
     socket.on("newBooking", (data) => {
       if (["admin", "employee"].includes(role)) {
         toast.custom(() => (
@@ -110,10 +126,9 @@ const Navbar = () => {
         setPendingCount((prev) => prev + 1);
       }
     });
-    // Khi role đã xác định, đăng ký role lên server
-    if (role) socket.emit("registerRole", role);
+
     return () => socket.disconnect();
-  }, [role]);
+  }, [BASE_URL, role]);
 
 
   return (

@@ -162,9 +162,25 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const socket = io(BASE_URL);
+    if (!BASE_URL) return;
 
-    // Lắng nghe realtime đặt phòng
+    // ⚙️ Khởi tạo socket chuẩn HTTPS
+    const socket = io(BASE_URL, {
+      transports: ["websocket"], // chỉ dùng WebSocket, tránh lỗi polling 400
+      reconnectionAttempts: 5,   // thử kết nối lại 5 lần
+      reconnectionDelay: 1000,   // mỗi lần cách nhau 1 giây
+    });
+
+    socket.on("connect", () => {
+      console.log("🟢 Socket connected:", socket.id);
+      if (role) socket.emit("registerRole", role);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 Socket disconnected");
+    });
+
+    // 📡 Lắng nghe đặt phòng mới
     socket.on("newBooking", (data) => {
       if (["admin", "employee"].includes(role)) {
         toast.custom(() => (
@@ -182,11 +198,8 @@ const Profile = () => {
       }
     });
 
-    // Khi role đã xác định, đăng ký role lên server
-    if (role) socket.emit("registerRole", role);
-
     return () => socket.disconnect();
-  }, [role]);
+  }, [BASE_URL, role]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 flex flex-col md:flex-row pt-16 md:pt-20">
