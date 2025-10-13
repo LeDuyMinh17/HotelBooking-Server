@@ -1,0 +1,98 @@
+# ========================================
+# ⚙️ General
+# ========================================
+node_modules/
+.env
+*.env
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+*.local
+
+# ========================================
+# 🧠 Build outputs
+# ========================================
+dist/
+dist-ssr/
+build/
+out/
+.cache/
+.parcel-cache/
+.vite/
+
+# ========================================
+# 🧩 Editor / OS files
+# ========================================
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ========================================
+# 🖥️ Frontend (client)
+# ========================================
+client/node_modules/
+client/.env
+client/dist/
+client/.vite/
+client/.cache/
+client/build/
+client/coverage/
+client/.parcel-cache/
+client/.DS_Store
+
+# ========================================
+# ⚙️ Backend (server)
+# ========================================
+server/node_modules/
+server/.env
+server/dist/
+server/.cache/
+server/logs/
+server/coverage/
+server/uploads/
+server/.DS_Store
+
+# ========================================
+# 🧪 Testing & temporary
+# ========================================
+coverage/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+*.tmp
+*.bak
+
+# ========================================
+# 📦 Miscellaneous
+# ========================================
+*.zip
+*.rar
+*.tar
+*.tar.gz
+*.7z
+*.lock
+*.pid
+*.seed
+*.pid.lock
+
+# ========================================
+# 🚫 Security / Secrets
+# ========================================
+/*.pem
+/*.key
+/*.crt
+/*.cert
+/*.pfx
+/*.keystore
+/*.json.secret
+
