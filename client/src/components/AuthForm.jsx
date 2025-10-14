@@ -175,7 +175,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                     toast.error(err.response?.data?.message || "Không thể gửi lại mã");
                   }
                 }}
-                className="bg-gray-200 px-4 py-3 rounded-lg"
+                className="bg-gray-200 px-4 py-3 cursor-pointer rounded-lg"
               >
                 {resendCooldown > 0 ? `Gửi lại (${resendCooldown}s)` : "Gửi lại mã"}
               </button>
