@@ -113,7 +113,7 @@ const AdminEmployee = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(isEditing ? "Cập nhật thông tin thành công!" : "Thêm nhân viên thành công!");
+      toast.success(isEditing ? "Cập nhật thành công!" : "Thêm thành công!");
       setShowForm(false);
       fetchEmployees(); // reload lại danh sách nhẹ (nếu có)
     } catch (err) {
@@ -136,11 +136,11 @@ const AdminEmployee = () => {
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setEmployees((prev) => prev.filter((e) => e._id !== id));
-          toast.success(res.data.message || "Đã xoá nhân viên thành công!");
+          toast.success(res.data.message || "Xoá thành công!");
           setWarn({ open: false, title: "", message: "", onConfirm: null });
         } catch (err) {
           console.error(err);
-          toast.error("Không thể xoá nhân viên.");
+          toast.error("Lỗi!");
         }
       },
     });
@@ -295,7 +295,6 @@ const EmployeeDetailModal = ({ selectedEmployee, setSelectedEmployee, stats, set
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // ✅ Giờ sẽ chạy được vì modal có props setSelectedEmployee
       setSelectedEmployee((prev) => ({
         ...prev,
         employee: { ...prev.employee, isActive: res.data.isActive },
@@ -303,7 +302,7 @@ const EmployeeDetailModal = ({ selectedEmployee, setSelectedEmployee, stats, set
 
     } catch (error) {
       console.error("Toggle error:", error);
-      toast.error("Không thể thay đổi trạng thái hoạt động.");
+      toast.error("Lỗi!");
     }
   };
 

@@ -74,7 +74,7 @@ const AdminRooms = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.numberRoom || !form.price)
-      return toast.error("Vui lòng nhập đầy đủ thông tin!");
+      return toast.error("Thiếu thông tin!");
 
     try {
       if (editingRoom) {

@@ -82,6 +82,10 @@ app.get("/", (req, res) => {
   res.send("HotelBooking API & Socket.IO đang hoạt động ");
 });
 
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
+
 // 🚀 Khởi động server
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, "0.0.0.0", () => {

@@ -115,7 +115,7 @@ useEffect(() => {
     return list;
   }, [customers, search, sortType]);
 
-  // 🔸 Phân trang local: danh sách KHÁCH HÀNG (mới thêm)
+  // Phân trang local: danh sách KHÁCH HÀNG (mới thêm)
   const {
     pagedCustomers,
     customerTotalPages,
@@ -147,7 +147,7 @@ useEffect(() => {
       const customer = res.data.customer;
       const invs = res.data.invoices || [];
 
-      // ✅ Tính thống kê thực tế từ invoices (giữ nguyên logic modal)
+      // Tính thống kê thực tế từ invoices (giữ nguyên logic modal)
       const tongHoaDon = invs.length;
       const choXacNhan = invs.filter((i) => i.status === "Chờ xác nhận").length;
       const choThanhToan = invs.filter((i) => i.status === "Chờ thanh toán").length;
@@ -166,14 +166,14 @@ useEffect(() => {
         tongTienThanhToan,
       };
 
-      // 🧩 Gán state cho modal (giữ nguyên UI)
+      // Gán state cho modal (giữ nguyên UI)
       setSelectedCustomer(customer);
       setStats(localStats);
       setInvoices(invs);
       setPage(1);
       setShowModal(true);
 
-      // 🔥 Cập nhật lại customers bên ngoài để filter/sort hiển thị đúng (giữ nguyên)
+      // Cập nhật lại customers bên ngoài để filter/sort hiển thị đúng (giữ nguyên)
       setCustomers((prev) =>
         prev.map((c) =>
           c._id === id
@@ -189,11 +189,11 @@ useEffect(() => {
         )
       );
     } catch (err) {
-      console.error("❌ Lỗi khi xem chi tiết khách hàng:", err);
+      console.error("Lỗi khi xem chi tiết khách hàng:", err);
     }
   }, [token]);
 
-  // 🔸 Phân trang local cho bảng hoá đơn trong modal (giữ nguyên)
+  // Phân trang local cho bảng hoá đơn trong modal (giữ nguyên)
   const { totalPages, pagedInvoices } = useMemo(() => {
     const total = Math.max(1, Math.ceil(invoices.length / pageSize));
     const safePage = Math.min(Math.max(1, page), total);
@@ -218,7 +218,7 @@ useEffect(() => {
         Quản lý khách hàng
       </h1>
 
-      {/* 📱 Accordion Filter trên mobile (giữ nguyên) */}
+      {/* Accordion Filter trên mobile (giữ nguyên) */}
       <div className="lg:hidden mb-6">
         <button
           onClick={() => setShowFilter((p) => !p)}
@@ -280,7 +280,7 @@ useEffect(() => {
         )}
       </div>
 
-      {/* 🧩 Layout chính 2/3 - 1/3 (giữ nguyên UI) */}
+      {/* Layout chính 2/3 - 1/3 (giữ nguyên UI) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Bảng khách hàng (2/3) */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-md p-4 md:p-6 overflow-x-auto">
@@ -329,7 +329,7 @@ useEffect(() => {
                 </tbody>
               </table>
 
-              {/* 🔸 Phân trang local cho KHÁCH HÀNG (mới thêm) */}
+              {/* Phân trang local cho KHÁCH HÀNG (mới thêm) */}
               {filteredCustomers.length > customerPageSize && (
                 <div className="flex justify-center items-center gap-4 mt-6">
                   <button
@@ -448,7 +448,7 @@ useEffect(() => {
                       isActive: res.data.isActive,
                     }));
                   } catch (err) {
-                    toast.error("Không thể thay đổi trạng thái người dùng.");
+                    toast.error("Lỗi.");
                   }
                 }}
                 className={`relative w-14 h-7 flex items-center rounded-full cursor-pointer transition-colors ${

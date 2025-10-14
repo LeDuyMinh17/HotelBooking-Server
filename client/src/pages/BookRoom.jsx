@@ -96,7 +96,7 @@ const DatPhongChiTiet = () => {
       await axios.post(`${BASE_URL}/tao-hoa-don`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Đặt phòng thành công! 🎉");
+      toast.success("Đặt phòng thành công!");
       navigate("/");
     } catch (error) {
       console.error("Lỗi khi tạo hoá đơn:", error);

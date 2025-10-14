@@ -112,10 +112,10 @@ const AdminServices = () => {
 
       if (editing) {
         await api.put(`/sua-dich-vu/${editing._id}`, payload);
-        toast.success("Cập nhật dịch vụ thành công!");
+        toast.success("Cập nhật thành công!");
       } else {
         await api.post("/them-dich-vu", payload);
-        toast.success("Thêm dịch vụ thành công!");
+        toast.success("Thêm thành công!");
       }
 
       resetForm();
@@ -162,7 +162,7 @@ const AdminServices = () => {
       onConfirm: async () => {
         try {
           await api.delete(`/xoa-dich-vu/${id}`);
-          toast.success("Đã xoá dịch vụ thành công!");
+          toast.success("Xoá thành công!");
           fetchServices();
         } catch {
           toast.error("Không thể xoá dịch vụ này!");

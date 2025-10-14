@@ -214,7 +214,7 @@ export default function Dashboard({ role = "admin" }) {
       <header className="sticky top-0 z-10 backdrop-blur bg-white/80 border-b border-sky-100">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="font-playfair text-2xl md:text-3xl font-bold text-sky-700">Bảng điều khiển</h1>
+            <h1 className="font-playfair text-2xl md:text-3xl font-bold text-sky-700">DASHBOARD</h1>
             <p className="text-sm text-gray-500">
               {greet()}, {role === "admin" ? "Admin" : role === "employee" ? "Nhân viên" : "Khách"} ·{" "}
               {new Date().toLocaleString("vi-VN")} · {refreshTick}

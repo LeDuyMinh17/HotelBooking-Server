@@ -99,7 +99,7 @@ const InvoiceDetail = () => {
   if (!end) {
     if (start > today) {
       // Ngày nhận ở tương lai → chưa đến ngày nhận
-      if (isPaying) toast.error("Chưa đến ngày nhận phòng.");
+      if (isPaying) toast.error("Không thể thanh toán do chưa đến ngày nhận phòng!");
       return {
         ...data,
         roomCharge: 0,
@@ -196,15 +196,15 @@ const InvoiceDetail = () => {
     try {
       if (!invoice.checkIn) return toast.error("Thiếu ngày nhận phòng.");
       if (invoice.checkOut && !isAfter(invoice.checkOut, invoice.checkIn))
-        return toast.error("Ngày trả phòng phải sau ngày nhận phòng.");
+        return toast.error("Lỗi ngày trả phòng! Mời xem lại.");
 
       for (const s of invoice.services || []) {
         if (s.startDate && invoice.checkIn && isBefore(s.startDate, invoice.checkIn))
-          return toast.error("Ngày bắt đầu dịch vụ không được trước ngày nhận phòng.");
+          return toast.error("Lỗi ngày đặt dịch vụ! Mời xem lại.");
         if (s.startDate && s.endDate && !isAfter(s.endDate, s.startDate))
-          return toast.error("Ngày kết thúc dịch vụ phải sau ngày bắt đầu.");
+          return toast.error("Lỗi ngày đặt dịch vụ! Mời xem lại.");
         if (s.endDate && invoice.checkOut && isAfter(s.endDate, invoice.checkOut))
-          return toast.error("Ngày kết thúc dịch vụ không được sau ngày trả phòng.");
+          return toast.error("Lỗi ngày đặt dịch vụ! Mời xem lại.");
       }
 
       const token = localStorage.getItem("token");
@@ -241,7 +241,7 @@ const InvoiceDetail = () => {
 
       // Nếu tổng tiền = 0 vì chưa đến ngày nhận phòng thì chặn thanh toán
       if (updatedInvoice.totalAmount === 0 && !invoice.checkOut && new Date(invoice.checkIn) > new Date()) {
-        toast.error("Chưa đến ngày nhận phòng, không thể thanh toán.");
+        toast.error("Không thể thanh toán do chưa đến ngày nhận phòng!");
         return;
       }
 
@@ -268,7 +268,7 @@ const InvoiceDetail = () => {
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("✅ Cập nhật trạng thái thành công!");
+      toast.success("Xác nhận thành công!");
       broadcastInvoiceChange();
       await refreshInvoice();
     } catch (error) {
@@ -285,7 +285,7 @@ const InvoiceDetail = () => {
   /* ===== In PDF (chỉ khi đã thanh toán) ===== */
   const handlePrint = async () => {
     if (invoice.status !== "Đã thanh toán") {
-      toast.error("Chỉ có thể in hoá đơn khi đã thanh toán.");
+      toast.error("Chưa thanh toán!");
       return;
     }
     try {

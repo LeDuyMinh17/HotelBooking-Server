@@ -70,7 +70,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
     const { name, phone, email, password, confirmPassword } = registerValues;
 
     if (!name || !phone || !email || !password || !confirmPassword)
-      return toast.error("Vui lòng nhập đầy đủ thông tin!");
+      return toast.error("Thiếu thông tin!");
 
     if (password !== confirmPassword) return toast.error("Mật khẩu nhập lại không khớp!");
 
