@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken";
 import authToken from "../middleware/authMiddleware.js"
 import VerifyCode from "../models/vertifyCode.js"; 
 import { sendVerificationEmail } from "../middleware/sendEmail.js";
-import crypto from "crypto";
 
 const genCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -69,7 +68,7 @@ userRouter.post("/dang-ky", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Lỗi server" });
+    return res.status(500).json({ message: "Lỗi server" + error.message });
   }
 });
 
