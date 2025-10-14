@@ -74,7 +74,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
 
     if (password !== confirmPassword) return toast.error("Mật khẩu nhập lại không khớp!");
 
-    alert("Đã ấn nút đăng ký!")
+   console.log("[REGISTER] BASE_URL =", BASE_URL);
 
     try {
       const res = await axios.post(`${BASE_URL}/dang-ky`, {
@@ -305,7 +305,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none"
               />
               <button
-                type="submit"
+                type="button"
                 onClick={handleRegister}
                 className="w-full bg-primary text-white font-medium py-3 rounded-lg shadow-md cursor-pointer hover:bg-primary/90 transition"
               >
