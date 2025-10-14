@@ -387,23 +387,25 @@ const InvoiceDetail = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">
               Thông tin khách hàng
             </h2>
-
-            {["name", "email", "phone"].map((f) => (
-              <p key={f}>
-                <span className="font-medium capitalize">{f}:</span>{" "}
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={invoice.customerId?.[f] || ""}
-                    onChange={(e) => handleChangeCustomer(f, e.target.value)}
-                    className="border-b border-gray-400 focus:outline-none px-2"
-                  />
-                ) : (
-                  invoice.customerId?.[f]
-                )}
-              </p>
-            ))}
-
+              {[
+                { key: "name", label: "Họ tên khách hàng" },
+                { key: "email", label: "Email" },
+                { key: "phone", label: "Số điện thoại" },
+              ].map(({ key, label }) => (
+                <p key={key}>
+                  <span className="font-medium">{label}:</span>{" "}
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={invoice.customerId?.[key] || ""}
+                      onChange={(e) => handleChangeCustomer(key, e.target.value)}
+                      className="border-b border-gray-400 focus:outline-none px-2"
+                    />
+                  ) : (
+                    invoice.customerId?.[key]
+                  )}
+                </p>
+              ))}
             <p>
               <span className="font-medium">Ghi chú:</span>{" "}
               {isEditing ? (

@@ -22,12 +22,11 @@ userRouter.post("/dang-ky", async (req, res) => {
     if (!name || name.length < 5) return res.status(400).json({ message: "Tên quá ngắn" });
     if (!email || !password || !phone) return res.status(400).json({ message: "Thiếu thông tin" });
 
-    // 1) kiểm tra user đã tồn tại
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ $or: [{ email }, { phone }] });
 
-    // Nếu user tồn tại và đã active => từ chối
+    // Nếu user tồn tại và đã kích hoạt
     if (user && user.isActive) {
-      return res.status(400).json({ message: "Email đã được đăng ký" });
+      return res.status(400).json({ message: "Email hoặc SĐT đã được đăng ký" });
     }
 
     // Nếu user không tồn tại -> tạo user mới với isActive = false

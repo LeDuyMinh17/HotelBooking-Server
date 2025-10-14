@@ -456,7 +456,7 @@ export default function Dashboard({ role = "admin" }) {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip formatter={(v) => `${currency(v)} ₫`} />
-                  <Bar dataKey="revenue" fill="#2563eb" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="revenue" fill="#2563eb" name="Tổng tiền" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

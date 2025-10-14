@@ -236,7 +236,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
         ) : (
           <>
             <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Đăng ký</h2>
-            <form className="space-y-5" onSubmit={handleRegister}>
+            <form className="space-y-5">
               <input
                 type="text"
                 name="name"
@@ -304,6 +304,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
               />
               <button
                 type="submit"
+                onClick={handleRegister}
                 className="w-full bg-primary text-white font-medium py-3 rounded-lg shadow-md cursor-pointer hover:bg-primary/90 transition"
               >
                 Đăng ký
