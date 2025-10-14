@@ -74,6 +74,8 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
 
     if (password !== confirmPassword) return toast.error("Mật khẩu nhập lại không khớp!");
 
+    alert("Đã ấn nút đăng ký!")
+
     try {
       const res = await axios.post(`${BASE_URL}/dang-ky`, {
         name,

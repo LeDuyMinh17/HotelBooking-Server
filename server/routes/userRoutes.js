@@ -20,7 +20,6 @@ userRouter.post("/dang-ky", async (req, res) => {
     const { email, password, name, phone, role } = req.body;
 
     if (!name || name.length < 5) return res.status(400).json({ message: "Tên quá ngắn" });
-    if (!email || !password || !phone) return res.status(400).json({ message: "Thiếu thông tin" });
 
     let user = await User.findOne({ $or: [{ email }, { phone }] });
 
@@ -28,6 +27,8 @@ userRouter.post("/dang-ky", async (req, res) => {
     if (user && user.isActive) {
       return res.status(400).json({ message: "Email hoặc SĐT đã được đăng ký" });
     }
+
+    console.log("Đã vào router đăg kí")
 
     // Nếu user không tồn tại -> tạo user mới với isActive = false
     if (!user) {
@@ -57,10 +58,11 @@ userRouter.post("/dang-ky", async (req, res) => {
     await VerifyCode.deleteMany({ email }); // xóa mã cũ (nếu có)
     const verify = new VerifyCode({ userId: user._id, email, code });
     await verify.save();
+        console.log("Đã tạo mã xác minh")
 
     // 3) gửi email
     await sendVerificationEmail(email, code);
-
+            console.log("Đã gửi mã xác minh")
     return res.status(200).json({
       message: "Đã gửi mã xác minh đến email. Mã có hiệu lực 5 phút.",
       email,
