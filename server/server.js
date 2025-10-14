@@ -19,7 +19,7 @@ app.use(
   cors({
     origin: [
       "https://hotel-booking-eosin-sigma.vercel.app", // frontend chính thức
-      "http://localhost:3000", // để test local nếu cần
+      "http://localhost:5173", // để test local nếu cần
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,

@@ -239,7 +239,7 @@ const Profile = () => {
           >
             Đổi ảnh đại diện
           </label>
-           <div className="text-center mt-2">
+           <div className="text-center mt-2 hidden md:block">
             <span className="block font-semibold text-gray-800 text-sm md:text-base">
               {formValues.name || "Người dùng"}
             </span>
@@ -375,7 +375,11 @@ const Profile = () => {
       <main className="flex-1 p-4 md:p-10 mt-25 md:mt-0">
         {activeTab === "invoice" && <Invoices role={role} />}
         {role === "admin" && activeTab === "rooms" && <AdminRooms />}
-        {role === "admin" && activeTab === "dashboard" && <Dashboard role={role} />}
+        {role === "admin" && activeTab === "dashboard" && (
+          <div className="mt-[85px] md:mt-0">
+            <Dashboard role={role} />
+          </div>
+        )}
         {role === "admin" && activeTab === "services" && <AdminServices />}
         {role === "admin" && activeTab === "customers" && <AdminCustomer />}
         {role === "admin" && activeTab === "employees" && <AdminEmployee />}
