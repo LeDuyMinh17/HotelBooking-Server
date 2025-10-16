@@ -16,7 +16,7 @@ const userRouter = express.Router();
 
 // Đăng ký
 userRouter.post("/dang-ky", async (req, res) => {
-  const EXPIRE_MINUTES = 1;
+  const EXPIRE_MINUTES = 5;
   try {
     const { email, password, name, phone, role } = req.body;
 
@@ -97,10 +97,15 @@ userRouter.post("/verify-email", async (req, res) => {
     if (!record) return res.status(400).json({ message: "Không tìm thấy mã xác minh" });
     if (record.code !== code) return res.status(400).json({ message: "Mã xác minh không đúng" });
 
-    await User.updateOne(
+    const updateRes = await User.updateOne(
       { _id: record.userId, email },
       { $set: { isActive: true }, $unset: { expiresAt: 1 } } // ⬅️ gỡ TTL
     );
+
+    if (!updateRes || updateRes.matchedCount === 0) {
+      await VerifyCode.deleteMany({ email });
+      return res.status(410).json({ message: "Tai khoan da het han (da bi xoa). Vui long dang ky lai." });
+    }
 
     await VerifyCode.deleteMany({ email });
     return res.status(200).json({ message: "Xác minh thành công. Hãy đăng nhập." });
@@ -112,7 +117,7 @@ userRouter.post("/verify-email", async (req, res) => {
 
 // Endpoint resend
 userRouter.post("/resend-code", async (req, res) => {
-  const EXPIRE_MINUTES = 1;
+  const EXPIRE_MINUTES = 5;
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });

@@ -155,8 +155,9 @@ const Profile = () => {
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
+      // Cập nhật ngay Redux + localStorage, tránh phải reload hay đăng xuất
+      dispatch(authAction.setAvatar(res.data.secure_url));
       toast.success("Đổi avatar thành công!");
-      window.location.reload();
     } catch (err) {
       console.error(err);
       toast.error("Không thể đổi avatar.");
@@ -218,8 +219,8 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 flex flex-col md:flex-row pt-16 md:pt-20">
       {/* Sidebar */}
-      <aside className="md:w-72 w-full bg-white/80 backdrop-blur shadow-xl p-4 md:p-6 flex md:flex-col items-center justify-between md:justify-start rounded-b-2xl md:rounded-r-2xl fixed md:static top-0 left-0 z-20">
-        {/* Avatar */}
+      <aside className="md:w-72 w-full bg-white/80 backdrop-blur shadow-xl p-4 md:p-6 flex md:flex-col items-center md:items-stretch justify-between md:justify-start rounded-b-2xl md:rounded-r-2xl static md:sticky md:top-20 z-20">
+        {/* Avatar + Info */}
         <div className="flex flex-col items-center mt-6 space-y-3">
           {/* Ảnh đại diện */}
           <div className="relative group">
@@ -245,10 +246,118 @@ const Profile = () => {
               />
             </div>
           </div>
+          {/* Name + Email under avatar */}
+          <div className="hidden md:block text-center">
+            <div className="font-semibold text-gray-800 truncate max-w-[200px]">
+              {formValues.name || "Người dùng"}
+            </div>
+            <div className="text-xs text-gray-500 truncate max-w-[200px]">
+              {formValues.email || ""}
+            </div>
+          </div>
         </div>
 
-        {/* Actions */}
-        <nav className="mt-6 space-y-2 w-full">
+        {/* Mobile Actions (compact) */}
+        <div className="md:hidden w-full mt-30">
+          {role === "admin" ? (
+            <div className="grid grid-cols-6 gap-2">
+              <button
+                onClick={() => handleTabChange("dashboard")}
+                title="Dashboard"
+                aria-label="Dashboard"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "dashboard" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <BarChart3 size={18} />
+                <span className="sr-only">Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("invoice")}
+                title="Hóa đơn"
+                aria-label="Hóa đơn"
+                className={"relative flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "invoice" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <FileText size={18} />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] leading-none px-1 py-0.5 rounded-full shadow">{pendingCount}</span>
+                )}
+                <span className="sr-only">Hóa đơn</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("rooms")}
+                title="Phòng"
+                aria-label="Phòng"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "rooms" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <Home size={18} />
+                <span className="sr-only">Phòng</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("services")}
+                title="Dịch vụ"
+                aria-label="Dịch vụ"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "services" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <Briefcase size={18} />
+                <span className="sr-only">Dịch vụ</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("customers")}
+                title="Khách hàng"
+                aria-label="Khách hàng"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "customers" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <Users size={18} />
+                <span className="sr-only">Khách hàng</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("employees")}
+                title="Nhân viên"
+                aria-label="Nhân viên"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "employees" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <ClipboardList size={18} />
+                <span className="sr-only">Nhân viên</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={() => handleTabChange("invoice")}
+                title="Hóa đơn"
+                aria-label="Hóa đơn"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "invoice" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <FileText size={18} />
+                <span className="sr-only">Hóa đơn</span>
+              </button>
+              <button
+                onClick={() => handleTabChange("info")}
+                title="Thông tin"
+                aria-label="Thông tin"
+                className={"flex items-center justify-center h-10 rounded-full border cursor-pointer " +
+                  (activeTab === "info" ? "bg-amber-500 text-white border-amber-500" : "bg-white hover:bg-gray-50 text-gray-700")}
+              >
+                <User size={18} />
+                <span className="sr-only">Thông tin</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Actions */}
+        <nav className="hidden md:block mt-6 space-y-2 w-full">
           {role === "admin" ? (
             <>
               <button
@@ -399,7 +508,7 @@ const Profile = () => {
       </aside>
 
       {/* Content */}
-      <main className="flex-1 p-4 md:p-10 mt-25 md:mt-0">
+      <main className="flex-1 p-2 md:p-5">
         {activeTab === "invoice" && <Invoices role={role} />}
         {role === "admin" && activeTab === "rooms" && <AdminRooms />}
         {role === "admin" && activeTab === "dashboard" && (

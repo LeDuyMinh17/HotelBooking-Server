@@ -163,7 +163,7 @@ const AdminRooms = () => {
       </h1>
 
       {/* Sticky control bar */}
-      <div className="sticky top-60 z-40 flex flex-wrap gap-3 items-center bg-white/90 backdrop-blur-sm py-3">
+      <div className="sticky top-15 z-40 flex flex-wrap gap-3 items-center bg-white/90 backdrop-blur-sm py-3">
         <button
           onClick={() => {
             setEditingRoom(null);

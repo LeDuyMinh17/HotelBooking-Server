@@ -296,7 +296,7 @@ const ListRoom = () => {
       </div>
 
       {/* Danh sách phòng */}
-      <div className="w-full lg:w-4/5 flex flex-col gap-6 mt-16 lg:mt-0">
+      <div className="w-full lg:w-4/5 flex flex-col gap-6">
         <div className="flex flex-col items-start text-left">
           <h1 className="font-playfair text-4xl md:text-[40px]">
             Danh sách phòng

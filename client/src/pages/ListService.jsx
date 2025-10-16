@@ -45,8 +45,8 @@ const ListService = () => {
   }
 
   return (
-    <div className="py-10 px-4 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800">Danh sách dịch vụ</h2>
+    <div className="py-10 px-4 max-w-7xl mx-auto mt-20">
+      <h2 className="text-3xl font-playfair mb-6 text-gray-800">Danh sách dịch vụ</h2>
       {services.length === 0 ? (
           <div className="flex justify-center items-center min-h-[200px]">
             <p className="text-gray-500 text-lg text-center">

@@ -142,7 +142,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                       email: registeredEmail,
                       code: verifyCode,
                     });
-                    toast.error(r.data.message);
+                    toast.success(r.data.message);
                     setWaitingVerify(false);
                     setVerifyCode("");
                     switchMode("login");

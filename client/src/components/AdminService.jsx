@@ -203,7 +203,7 @@ const AdminServices = () => {
       </h1>
 
       {/* Sticky action bar */}
-      <div className="sticky top-60 z-30 flex items-center gap-3 bg-white/80 backdrop-blur-sm py-3">
+      <div className="sticky top-15 z-30 flex items-center gap-3 bg-white/80 backdrop-blur-sm py-3">
         <button
           onClick={() => setShowForm((prev) => !prev)}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium cursor-pointer shadow-md transition ${

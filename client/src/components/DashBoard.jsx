@@ -211,7 +211,7 @@ export default function Dashboard({ role = "admin" }) {
   /* ===================== UI ===================== */
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-sky-50 to-indigo-100 text-gray-800">
-      <header className="sticky top-0 z-10 backdrop-blur bg-white/80 border-b border-sky-100">
+      <header className="sticky top-15 z-30 backdrop-blur bg-white/80 border-b border-sky-100">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="font-playfair text-2xl md:text-3xl font-bold text-sky-700">DASHBOARD</h1>
