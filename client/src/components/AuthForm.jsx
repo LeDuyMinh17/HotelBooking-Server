@@ -196,6 +196,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 type="text"
                 name="email"
                 placeholder="Tên đăng nhập hoặc email..."
+                autoComplete="email"
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none"
                 required
                 value={Values.email}
@@ -205,6 +206,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 type="password"
                 name="password"
                 placeholder="Nhập mật khẩu"
+                autoComplete="current-password" 
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none"
                 required
                 value={Values.password}
@@ -269,6 +271,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 type="email"
                 name="email"
                 placeholder="Email (để xác minh)"
+                autoComplete="email"
                 value={registerValues.email}
                 onChange={(e) =>
                   setRegisterValues({
@@ -282,6 +285,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 type="password"
                 name="password"
                 placeholder="Mật khẩu"
+                autoComplete="new-password" 
                 value={registerValues.password}
                 onChange={(e) =>
                   setRegisterValues({
@@ -295,6 +299,7 @@ const AuthModal = ({ mode, onClose, switchMode }) => {
                 type="password"
                 name="confirmPassword"
                 placeholder="Nhập lại mật khẩu"
+                autoComplete="new-password"
                 value={registerValues.confirmPassword}
                 onChange={(e) =>
                   setRegisterValues({

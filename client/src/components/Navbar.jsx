@@ -3,11 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import { assets } from "../assets/assets";
 import AuthModal from "../components/AuthForm";
 import { useSelector } from "react-redux";
-import axios from "axios"; // 🧠 thêm dòng này
+import axios from "axios";
 import toast from "react-hot-toast";
-import { io } from "socket.io-client";
+import { getSocket } from "../lib/socket";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Suy ra origin cho socket nếu chưa set biến riêng
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || (BASE_URL ? new URL(BASE_URL).origin : "");
 
 const Navbar = () => {
   const navLinks = [
@@ -23,12 +26,12 @@ const Navbar = () => {
   const [authMode, setAuthMode] = useState("login");
 
   const [role, setRole] = useState("");
-  const [pendingCount, setPendingCount] = useState(0); // 🧩 thêm state theo dõi hóa đơn chờ xác nhận
+  const [pendingCount, setPendingCount] = useState(0);
 
   const location = useLocation();
   const { isLoggedIn, avatar } = useSelector((state) => state.user);
 
-  // 🧭 Theo dõi scroll
+  // Theo dõi scroll
   useEffect(() => {
     if (location.pathname === "/") {
       setIsScrolled(false);
@@ -39,7 +42,7 @@ const Navbar = () => {
     setIsScrolled(true);
   }, [location.pathname]);
 
-  // 🧠 Fetch role & pendingCount nếu là admin/employee
+  // Fetch role & pendingCount nếu là admin/employee
   useEffect(() => {
     const fetchPending = async () => {
       try {
@@ -68,53 +71,45 @@ const Navbar = () => {
 
           setPendingCount(count);
         } else {
-          // 🔴 Nếu là user thì reset ngay
           setPendingCount(0);
         }
       } catch (err) {
-        console.error("❌ Lỗi khi lấy pendingCount:", err);
+        console.error("Lỗi khi lấy pendingCount:", err);
         setPendingCount(0);
       }
     };
 
-    // 🔹 Gọi 1 lần đầu ngay khi login/logout thay đổi
+    // Gọi một lần đầu ngay khi login/logout thay đổi
     fetchPending();
 
-    // 🔹 Kiểm tra lại mỗi 30s (nếu vẫn đăng nhập)
+    // Kiểm tra lại mỗi 30s (nếu vẫn đang đăng nhập)
     const interval = setInterval(() => {
       const token = localStorage.getItem("token");
       if (token) fetchPending();
     }, 30000);
 
-    // Dọn interval khi unmount
     return () => clearInterval(interval);
-  }, [isLoggedIn]); // 👈 Theo dõi trạng thái đăng nhập
+  }, [isLoggedIn]);
 
+  // Lắng nghe socket (dùng singleton, không disconnect khi unmount)
   useEffect(() => {
-    if (!BASE_URL) return;
+    const socket = getSocket();
+    if (!socket) return;
 
-    // 🔹 Dùng wss:// cho môi trường HTTPS
-    const socket = io(BASE_URL, {
-      transports: ["websocket"], // ép dùng websocket, không polling
-      reconnectionAttempts: 5, // thử kết nối lại tối đa 5 lần
-      reconnectionDelay: 1000, // delay 1s giữa các lần
-    });
-
-    socket.on("connect", () => {
-      console.log("🟢 WebSocket connected:", socket.id);
-      if (role) socket.emit("registerRole", role); // đăng ký role ngay khi có
-    });
-
-    socket.on("disconnect", () => {
-      console.log("🔴 WebSocket disconnected");
-    });
-
-    // 📡 Lắng nghe realtime đặt phòng
-    socket.on("newBooking", (data) => {
+    const onConnect = () => {
+      if (role) socket.emit("registerRole", role);
+    };
+    const onDisconnect = () => {
+      console.log("⚪ WebSocket disconnected");
+    };
+    const onConnectError = (err) => {
+      console.warn("[Socket] connect_error:", err?.message || err);
+    };
+    const onNewBooking = (data) => {
       if (["admin", "employee"].includes(role)) {
         toast.custom(() => (
           <div className="bg-white border-l-4 border-amber-500 shadow-xl p-4 rounded-xl">
-            <p className="font-semibold text-gray-800">🛎️ Đặt phòng mới!</p>
+            <p className="font-semibold text-gray-800">Có đặt phòng mới!</p>
             <p className="text-sm text-gray-600 mt-1">
               {data.customer} vừa đặt phòng {data.room}.
             </p>
@@ -125,11 +120,28 @@ const Navbar = () => {
         ));
         setPendingCount((prev) => prev + 1);
       }
-    });
+    };
 
-    return () => socket.disconnect();
-  }, [BASE_URL, role]);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("newBooking", onNewBooking);
 
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("newBooking", onNewBooking);
+    };
+  }, [role]);
+
+  // Emit lại role khi thay đổi và socket đã kết nối
+  useEffect(() => {
+    const socket = getSocket();
+    if (socket && socket.connected && role) {
+      socket.emit("registerRole", role);
+    }
+  }, [role]);
 
   return (
     <>
@@ -279,3 +291,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

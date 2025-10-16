@@ -14,7 +14,10 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "employee","admin"],
     default: "user",
   },
-   isActive: { type: Boolean, default: true },
-}, { timestamps: true });
+   isActive: { type: Boolean, default: false },
+  expiresAt: { type: Date, default: null },
+}, { timestamps: true }); 
+
+  userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("User", userSchema);

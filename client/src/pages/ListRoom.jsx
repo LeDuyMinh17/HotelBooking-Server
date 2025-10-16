@@ -363,7 +363,7 @@ const ListRoom = () => {
                   </p>
 
                   {/* 🧠 Điều kiện nút hành động */}
-                  {role !== "user" && !room.isAvailable ? (
+                  {["admin", "employee"].includes(role) && !room.isAvailable ? (
                     <div className="flex gap-2">
                       <button
                         onClick={() =>

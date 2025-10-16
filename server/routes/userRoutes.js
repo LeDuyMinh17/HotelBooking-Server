@@ -16,69 +16,75 @@ const userRouter = express.Router();
 
 // Đăng ký
 userRouter.post("/dang-ky", async (req, res) => {
+  const EXPIRE_MINUTES = 1;
   try {
     const { email, password, name, phone, role } = req.body;
 
     if (!name || name.length < 5) return res.status(400).json({ message: "Tên quá ngắn" });
+    if (!email || !password)   return res.status(400).json({ message: "Thiếu email hoặc mật khẩu" });
 
+    // tìm theo email/phone
     let user = await User.findOne({ $or: [{ email }, { phone }] });
-
-    // Nếu user tồn tại và đã kích hoạt
     if (user && user.isActive) {
       return res.status(400).json({ message: "Email hoặc SĐT đã được đăng ký" });
     }
 
-    console.log("Đã vào router đăg kí")
+    const expiresAt = new Date(Date.now() + EXPIRE_MINUTES * 60 * 1000);
 
-    // Nếu user không tồn tại -> tạo user mới với isActive = false
+    // tạo mới / cập nhật user chưa kích hoạt
+    const hashed = await bcrypt.hash(password, 10);
     if (!user) {
-      const hashedPassword = await bcrypt.hash(password, 10);
       user = new User({
         email,
-        password: hashedPassword,
+        password: hashed,
         name,
         phone,
         role: role || "user",
         isActive: false,
+        expiresAt, // ⬅️ TTL 1 phút
       });
       await user.save();
     } else {
-      // user tồn tại nhưng isActive = false -> cập nhật thông tin nếu muốn
-      // tránh ghi đè password nếu người đã tạo trước đó
-      const hashed = await bcrypt.hash(password, 10);
       user.name = name;
       user.phone = phone;
       user.password = hashed;
       user.role = role || user.role || "user";
+      user.isActive = false;
+      user.expiresAt = expiresAt;      // ⬅️ gia hạn TTL
       await user.save();
     }
 
-    // 2) tạo mã xác minh và lưu VerifyCode (xóa mã cũ của email nếu có)
+    // tạo/ghi đè mã xác minh
     const code = genCode();
-    await VerifyCode.deleteMany({ email }); // xóa mã cũ (nếu có)
+    await VerifyCode.deleteMany({ email });
     const verify = new VerifyCode({ userId: user._id, email, code });
     await verify.save();
-        console.log("Đã tạo mã xác minh")
 
-    // 3) gửi email
-    await sendVerificationEmail(email, code);
-            console.log("Đã gửi mã xác minh")
+    // gửi email nhưng không để vỡ flow
+    let mailOk = true;
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (e) {
+      console.error("SendMail failed:", e?.message || e);
+      mailOk = false;
+    }
+
     return res.status(200).json({
-      message: "Đã gửi mã xác minh đến email. Mã có hiệu lực 5 phút.",
+      message: mailOk
+        ? "Đã gửi mã xác minh. Tài khoản sẽ tự xoá sau 1 phút nếu không xác minh."
+        : "Tạo tài khoản tạm thời. Gửi email thất bại — hãy bấm 'Gửi lại mã'. Tài khoản sẽ tự xoá sau 1 phút nếu không xác minh.",
       email,
+      mailOk,
+      expiresInMinutes: EXPIRE_MINUTES,
     });
+
   } catch (error) {
     console.error(error);
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
-      return res.status(400).json({
-        message:
-          field === "phone"
-            ? "Số điện thoại đã được sử dụng"
-            : "Email đã được sử dụng",
-      });
+      return res.status(400).json({ message: field === "phone" ? "Số điện thoại đã được sử dụng" : "Email đã được sử dụng" });
     }
-    return res.status(500).json({ message: "Lỗi server" + error.message });
+    return res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 });
 
@@ -86,52 +92,64 @@ userRouter.post("/dang-ky", async (req, res) => {
 userRouter.post("/verify-email", async (req, res) => {
   try {
     const { email, code } = req.body;
-    if (!email || !code) return res.status(400).json({ message: "Thiếu email hoặc mã" });
 
-    const record = await VerifyCode.findOne({ email, code });
-    if (!record) return res.status(400).json({ message: "Mã không hợp lệ hoặc đã hết hạn" });
+    const record = await VerifyCode.findOne({ email }).sort({ createdAt: -1 });
+    if (!record) return res.status(400).json({ message: "Không tìm thấy mã xác minh" });
+    if (record.code !== code) return res.status(400).json({ message: "Mã xác minh không đúng" });
 
-    // kích hoạt user
-    const user = await User.findById(record.userId || (await User.findOne({ email }))._id);
-    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+    await User.updateOne(
+      { _id: record.userId, email },
+      { $set: { isActive: true }, $unset: { expiresAt: 1 } } // ⬅️ gỡ TTL
+    );
 
-    user.isActive = true;
-    await user.save();
-
-    // xóa mã
     await VerifyCode.deleteMany({ email });
-
-    return res.status(200).json({ message: "Xác minh thành công. Bạn có thể đăng nhập." });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Lỗi server khi verify" });
+    return res.status(200).json({ message: "Xác minh thành công. Hãy đăng nhập." });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Lỗi server: " + e.message });
   }
 });
 
 // Endpoint resend
 userRouter.post("/resend-code", async (req, res) => {
+  const EXPIRE_MINUTES = 1;
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Thiếu email" });
-
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "Không tìm thấy user để gửi lại mã." });
-    if (user.isActive) return res.status(400).json({ message: "Tài khoản đã kích hoạt." });
+    if (!user) return res.status(404).json({ message: "Email chưa đăng ký" });
+    if (user.isActive) return res.status(400).json({ message: "Tài khoản đã xác minh" });
 
-    // Tạo mã mới
+    // gia hạn TTL 1 phút
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { expiresAt: new Date(Date.now() + EXPIRE_MINUTES * 60 * 1000) } }
+    );
+
     const code = genCode();
     await VerifyCode.deleteMany({ email });
     const verify = new VerifyCode({ userId: user._id, email, code });
     await verify.save();
 
-    await sendVerificationEmail(email, code);
+    let mailOk = true;
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (e) {
+      console.error("Resend mail failed:", e?.message || e);
+      mailOk = false;
+    }
 
-    return res.status(200).json({ message: "Đã gửi lại mã xác minh." });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Lỗi server khi gửi lại mã" });
+    return res.status(200).json({
+      message: mailOk
+        ? "Đã gửi lại mã. Tài khoản sẽ tự xoá sau 1 phút nếu không xác minh."
+        : "Không gửi được email — thử lại sau. Tài khoản sẽ tự xoá sau 1 phút nếu không xác minh.",
+      mailOk,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Lỗi server: " + e.message });
   }
 });
+
 
 // Đăng nhập
 userRouter.post("/dang-nhap", async (req, res) => {
@@ -144,8 +162,10 @@ userRouter.post("/dang-nhap", async (req, res) => {
     }
 
     // ✅ Kiểm tra trạng thái kích hoạt
-    if (!checkUser.isActive) {
-      return res.status(403).json({ message: "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ cho khách sạn." });
+    if (checkUser.role !== "admin" && !checkUser.isActive) {
+      return res.status(403).json({
+        message: "Tài khoản chưa xác minh. Vui lòng kiểm tra email hoặc bấm 'Gửi lại mã'."
+      });
     }
 
     const isMatch = await bcrypt.compare(password, checkUser.password);

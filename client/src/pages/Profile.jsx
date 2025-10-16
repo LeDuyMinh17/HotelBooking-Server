@@ -22,9 +22,12 @@ import AdminEmployee from "../components/AdminEmployee.jsx";
 import WarnModal from "../components/WarnForm.jsx";
 import toast from "react-hot-toast";
 import Dashboard from "../components/DashBoard.jsx";
-import { io } from "socket.io-client";
+import { getSocket } from "../lib/socket";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Suy ra origin cho Socket nếu chưa set VITE_SOCKET_URL
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || (BASE_URL ? new URL(BASE_URL).origin : "");
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -43,13 +46,12 @@ const Profile = () => {
     onConfirm: null,
   });
 
-  // 🧭 Ghi nhớ tab
+  // Đổi tab
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    localStorage.setItem("lastTab", tab);
   };
 
-  // 🧠 Lấy thông tin người dùng
+  // Lấy thông tin người dùng
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -69,9 +71,8 @@ const Profile = () => {
         setOriginalValues(userData);
         setRole(userData.role);
 
-        const lastTab = localStorage.getItem("lastTab");
-        if (lastTab) handleTabChange(lastTab);
-        else handleTabChange(userData.role === "admin" ? "dashboard" : "invoice");
+        // Luôn mở Dashboard cho admin, Invoice cho user khi vào Profile
+        handleTabChange(userData.role === "admin" ? "dashboard" : "invoice");
 
         if (["employee", "admin"].includes(userData.role)) {
           const invoiceRes = await axios.get(`${BASE_URL}/toan-bo-hoa-don`, {
@@ -83,20 +84,20 @@ const Profile = () => {
           setPendingCount(count);
         }
       } catch (err) {
-        console.error("❌ Lỗi khi lấy thông tin người dùng:", err);
+        console.error("Lỗi khi lấy thông tin người dùng:", err);
       }
     };
     fetchUser();
   }, []);
 
-  // 🚪 Logout
+  // Logout
   const handleLogout = () => {
     dispatch(authAction.logout());
     localStorage.clear();
     navigate("/");
   };
 
-  // 🗑️ Xoá tài khoản
+  // Xóa tài khoản
   const handleDeleteAccount = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -106,12 +107,12 @@ const Profile = () => {
       toast.success("Tài khoản đã được xoá!");
       handleLogout();
     } catch (error) {
-      console.error("❌ Lỗi xoá tài khoản:", error);
+      console.error("Lỗi xoá tài khoản:", error);
       toast.error("Không thể xoá tài khoản.");
     }
   };
 
-  // 👤 Cập nhật thông tin người dùng
+  // Cập nhật thông tin người dùng
   const handleChange = (e) =>
     setFormValues((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -125,8 +126,9 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Cập nhật thành công!");
-      setOriginalValues({ ...formValues });
-    } catch {
+      setOriginalValues((prev) => ({ ...prev, name: formValues.name, phone: formValues.phone }));
+    } catch (err) {
+      console.error(err);
       toast.error("Cập nhật thất bại!");
     }
   };
@@ -161,31 +163,26 @@ const Profile = () => {
     }
   };
 
+  // Lắng nghe socket (dùng singleton, không disconnect khi unmount)
   useEffect(() => {
-    if (!BASE_URL) return;
+    const socket = getSocket();
+    if (!socket) return;
 
-    // ⚙️ Khởi tạo socket chuẩn HTTPS
-    const socket = io(BASE_URL, {
-      transports: ["websocket"], // chỉ dùng WebSocket, tránh lỗi polling 400
-      reconnectionAttempts: 5,   // thử kết nối lại 5 lần
-      reconnectionDelay: 1000,   // mỗi lần cách nhau 1 giây
-    });
-
-    socket.on("connect", () => {
+    const onConnect = () => {
       console.log("🟢 Socket connected:", socket.id);
       if (role) socket.emit("registerRole", role);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("🔴 Socket disconnected");
-    });
-
-    // 📡 Lắng nghe đặt phòng mới
-    socket.on("newBooking", (data) => {
+    };
+    const onDisconnect = () => {
+      console.log("⚪ Socket disconnected");
+    };
+    const onConnectError = (err) => {
+      console.warn("[Socket] connect_error:", err?.message || err);
+    };
+    const onNewBooking = (data) => {
       if (["admin", "employee"].includes(role)) {
         toast.custom(() => (
           <div className="bg-white border-l-4 border-amber-500 shadow-xl p-4 rounded-xl">
-            <p className="font-semibold text-gray-800">🛎️ Đặt phòng mới!</p>
+            <p className="font-semibold text-gray-800">Có đặt phòng mới!</p>
             <p className="text-sm text-gray-600 mt-1">
               {data.customer} vừa đặt phòng {data.room}.
             </p>
@@ -196,10 +193,28 @@ const Profile = () => {
         ));
         setPendingCount((prev) => prev + 1);
       }
-    });
+    };
 
-    return () => socket.disconnect();
-  }, [BASE_URL, role]);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("newBooking", onNewBooking);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("newBooking", onNewBooking);
+    };
+  }, [role]);
+
+  // Emit lại role khi thay đổi và socket đã kết nối
+  useEffect(() => {
+    const socket = getSocket();
+    if (socket && socket.connected && role) {
+      socket.emit("registerRole", role);
+    }
+  }, [role]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 flex flex-col md:flex-row pt-16 md:pt-20">
@@ -231,59 +246,41 @@ const Profile = () => {
               />
             </div>
           </div>
-
-          {/* Nút đổi ảnh cho mobile (khi không hover được) */}
-          <label
-            htmlFor="avatarUpload"
-            className="md:hidden cursor-pointer text-amber-600 font-medium hover:underline"
-          >
-            Đổi ảnh đại diện
-          </label>
-           <div className="text-center mt-2 hidden md:block">
-            <span className="block font-semibold text-gray-800 text-sm md:text-base">
-              {formValues.name || "Người dùng"}
-            </span>
-            <span className="block text-gray-500 text-xs md:text-sm break-all">
-              {formValues.email || "Chưa có email"}
-            </span>
-          </div>
         </div>
-        {/* Navigation */}
-        <nav className="mt-24 md:mt-8 w-full md:space-y-2 flex md:flex-col justify-center gap-2 md:gap-0">
-          {role === "admin" && (
-            <button
-              onClick={() => handleTabChange("dashboard")}
-              className={`flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl cursor-pointer font-medium transition text-sm ${
-                activeTab === "dashboard"
-                  ? "bg-amber-500 text-white shadow"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              <BarChart3 size={18} /> <span className="hidden md:inline">Dashboard</span>
-            </button>
-          )}
 
-          <button
-            onClick={() => handleTabChange("invoice")}
-            className={`flex items-center justify-center md:justify-between w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm ${
-              activeTab === "invoice"
-                ? "bg-amber-500 text-white shadow"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            <span className="flex items-center gap-2 md:gap-3">
-              <FileText size={18} />{" "}
-              <span className="hidden md:inline">Quản lý hoá đơn</span>
-            </span>
-            {(role === "employee" || role === "admin") && pendingCount > 0 && (
-              <span className="animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          {role === "admin" && (
+        {/* Actions */}
+        <nav className="mt-6 space-y-2 w-full">
+          {role === "admin" ? (
             <>
+              <button
+                onClick={() => handleTabChange("dashboard")}
+                className={`flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm ${
+                  activeTab === "dashboard"
+                    ? "bg-amber-500 text-white shadow"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                <BarChart3 size={18} /> <span className="hidden md:inline">Dashboard</span>
+              </button>
+
+              {/* moved up: hide duplicate */}
+              <button
+                onClick={() => handleTabChange("invoice")}
+                className={"relative flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm " +
+                  (activeTab === "invoice" ? "bg-amber-500 text-white shadow" : "hover:bg-gray-100 text-gray-700")}
+              >
+                <FileText size={18} />
+                <span className="hidden md:inline">Hóa đơn</span>
+                {pendingCount > 0 && (
+                  <span
+                    title={`${pendingCount} hóa đơn chờ xác nhận`}
+                    className="absolute right-3 md:right-4 top-2 md:top-2 bg-red-500 text-white text-[10px] leading-none px-1.5 py-1 rounded-full shadow"
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={() => handleTabChange("rooms")}
                 className={`flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm ${
@@ -292,7 +289,7 @@ const Profile = () => {
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
-                <Home size={18} /> <span className="hidden md:inline">Quản lý phòng</span>
+                <Home size={18} /> <span className="hidden md:inline">Phòng</span>
               </button>
 
               <button
@@ -303,8 +300,7 @@ const Profile = () => {
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
-                <Briefcase size={18} />{" "}
-                <span className="hidden md:inline">Quản lý dịch vụ</span>
+                <Briefcase size={18} /> <span className="hidden md:inline">Dịch vụ</span>
               </button>
 
               <button
@@ -315,8 +311,7 @@ const Profile = () => {
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
-                <Users size={18} />{" "}
-                <span className="hidden md:inline">Khách hàng</span>
+                <Users size={18} /> <span className="hidden md:inline">Khách hàng</span>
               </button>
 
               <button
@@ -327,8 +322,41 @@ const Profile = () => {
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
-                <ClipboardList size={18} />{" "}
-                <span className="hidden md:inline">Nhân viên</span>
+                <ClipboardList size={18} /> <span className="hidden md:inline">Nhân viên</span>
+              </button>
+
+              <button style={{display:'none'}}
+                onClick={() => handleTabChange("invoice")}
+                className={`relative flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm ${
+                  activeTab === "invoice"
+                    ? "bg-amber-500 text-white shadow"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                <FileText size={18} />
+                <span className="hidden md:inline">Hóa đơn</span>
+                {pendingCount > 0 && (
+                  <span
+                    title={`${pendingCount} hóa đơn chờ xác nhận`}
+                    className="absolute right-3 md:right-4 top-2 md:top-2 bg-red-500 text-white text-[10px] leading-none px-1.5 py-1 rounded-full shadow"
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handleTabChange("invoice")}
+                className={`relative flex items-center justify-center md:justify-start gap-2 w-full px-3 py-2 md:px-5 md:py-3 rounded-xl font-medium cursor-pointer transition text-sm ${
+                  activeTab === "invoice"
+                    ? "bg-amber-500 text-white shadow"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                <FileText size={18} />
+                <span className="hidden md:inline">Hóa đơn</span>
               </button>
             </>
           )}

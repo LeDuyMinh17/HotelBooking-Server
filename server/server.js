@@ -4,90 +4,75 @@ import cors from "cors";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import conndb from "./configs/conndb.js";
+import User from "./models/user.js";       
+import VerifyCode from "./models/vertifyCode.js";
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+// ✅ BẬT CORS CHO HTTP API
+app.use(cors({
+  origin: [
+    "https://hotel-booking-eosin-sigma.vercel.app",
+    "http://localhost:5173",
+  ],
+  credentials: true
+}));
+
+// HTTP server & Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://hotel-booking-eosin-sigma.vercel.app",
+      "http://localhost:5173",
+    ],
+    methods: ["GET","POST"],
+    credentials: true
+  },
+  transports: ["websocket","polling"],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// (socket handlers…)
+let onlineAdmins = new Set();
+io.on("connection", (socket) => {
+  socket.on("registerRole", (role) => {
+    if (role === "admin" || role === "employee") onlineAdmins.add(socket.id);
+  });
+  socket.on("disconnect", () => onlineAdmins.delete(socket.id));
+});
+app.set("io", io);
+
+// (routes…)
 import UserRoutes from "./routes/userRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import serviceRoutes from "./routes/serviceRoutes.js";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
-
-dotenv.config();
-
-const app = express();
-
-// 🧩 Cấu hình CORS cho HTTP request
-app.use(
-  cors({
-    origin: [
-      "https://hotel-booking-eosin-sigma.vercel.app", // frontend chính thức
-      "http://localhost:5173", // để test local nếu cần
-    ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
-  })
-);
-
-app.use(express.json());
-
-// 🧱 Tạo server HTTP độc lập cho Socket.IO
-const server = http.createServer(app);
-
-// ⚙️ Cấu hình Socket.IO
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "https://hotel-booking-eosin-sigma.vercel.app",
-      "http://localhost:3000",
-    ],
-    methods: ["GET", "POST"],
-  },
-  transports: ["websocket", "polling"], // đảm bảo fallback ổn định
-  pingTimeout: 60000, // tránh timeout sớm trên Render
-  pingInterval: 25000,
-});
-
-// 🧠 Kết nối database
-conndb();
-
-// 🔌 Quản lý admin/employee online
-let onlineAdmins = new Set();
-
-io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-
-  socket.on("registerRole", (role) => {
-    if (role === "admin" || role === "employee") {
-      onlineAdmins.add(socket.id);
-      console.log(`${role} connected (${socket.id})`);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    onlineAdmins.delete(socket.id);
-    console.log("Client disconnected:", socket.id);
-  });
-});
-
-// Cho phép truy cập io trong route khác nếu cần
-app.set("io", io);
-
-// 📦 Routes API
 app.use("/api/v1", UserRoutes);
 app.use("/api/v1", roomRoutes);
 app.use("/api/v1", serviceRoutes);
 app.use("/api/v1", invoiceRoutes);
 app.use("/api/v1", customerRoutes);
 
-// 🔍 Route test kiểm tra hoạt động
-app.get("/", (req, res) => {
-  res.send("HotelBooking API & Socket.IO đang hoạt động ");
-});
+app.get("/", (req,res)=>res.send("HotelBooking API & Socket.IO đang hoạt động "));
+app.get("/ping", (req,res)=>res.send("pong"));
 
-app.get("/ping", (req, res) => {
-  res.send("pong");
-});
+async function bootstrap() {
+  await conndb(); // ⬅️ KẾT NỐI DB TRƯỚC
+  try {
+    await Promise.all([User.syncIndexes?.(), VerifyCode.syncIndexes?.()]);
+    console.log("Indexes synced");
+  } catch (err) {
+    console.warn("syncIndexes warn:", err?.message || err);
+  }
 
-// 🚀 Khởi động server
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server & Socket.IO đang chạy tại cổng ${PORT}`);
-});
+  const PORT = process.env.PORT || 10000; // dùng 1 PORT duy nhất
+  server.listen(PORT, "0.0.0.0", () => console.log(`Server & Socket.IO chạy tại cổng ${PORT}`));
+}
+bootstrap().catch(e => { console.error("Bootstrap failed:", e); process.exit(1); });
+
