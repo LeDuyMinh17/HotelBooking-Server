@@ -169,7 +169,6 @@ const Profile = () => {
     if (!socket) return;
 
     const onConnect = () => {
-      console.log("🟢 Socket connected:", socket.id);
       if (role) socket.emit("registerRole", role);
     };
     const onDisconnect = () => {
