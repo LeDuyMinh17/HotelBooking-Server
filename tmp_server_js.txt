@@ -1,0 +1,79 @@
+import express from "express";
+import http from "http";
+import cors from "cors";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import conndb from "./configs/conndb.js";
+import User from "./models/user.js";       
+import VerifyCode from "./models/vertifyCode.js";
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+// ✅ BẬT CORS CHO HTTP API
+app.use(cors({
+  origin: [
+    "https://hotel-booking-eosin-sigma.vercel.app",
+    "http://localhost:5173",
+  ],
+  credentials: true
+}));
+
+// HTTP server & Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://hotel-booking-eosin-sigma.vercel.app",
+      "http://localhost:5173",
+    ],
+    methods: ["GET","POST"],
+    credentials: true
+  },
+  transports: ["websocket","polling"],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// (socket handlers…)
+let onlineAdmins = new Set();
+io.on("connection", (socket) => {
+  socket.on("registerRole", (role) => {
+    if (role === "admin" || role === "employee") onlineAdmins.add(socket.id);
+  });
+  socket.on("disconnect", () => onlineAdmins.delete(socket.id));
+});
+app.set("io", io);
+
+// (routes…)
+import UserRoutes from "./routes/userRoutes.js";
+import roomRoutes from "./routes/roomRoutes.js";
+import serviceRoutes from "./routes/serviceRoutes.js";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
+app.use("/api/v1", UserRoutes);
+app.use("/api/v1", roomRoutes);
+app.use("/api/v1", serviceRoutes);
+app.use("/api/v1", invoiceRoutes);
+app.use("/api/v1", customerRoutes);
+
+app.get("/", (req,res)=>res.send("HotelBooking API & Socket.IO đang hoạt động "));
+app.get("/ping", (req,res)=>res.send("pong"));
+
+async function bootstrap() {
+  await conndb(); // ⬅️ KẾT NỐI DB TRƯỚC
+  try {
+    await Promise.all([User.syncIndexes?.(), VerifyCode.syncIndexes?.()]);
+    console.log("Indexes synced");
+  } catch (err) {
+    console.warn("syncIndexes warn:", err?.message || err);
+  }
+
+  const PORT = process.env.PORT || 10000; // dùng 1 PORT duy nhất
+  server.listen(PORT, "0.0.0.0", () => console.log(`Server & Socket.IO chạy tại cổng ${PORT}`));
+}
+bootstrap().catch(e => { console.error("Bootstrap failed:", e); process.exit(1); });
+
+
